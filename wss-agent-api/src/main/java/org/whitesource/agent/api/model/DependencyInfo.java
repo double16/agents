@@ -56,7 +56,6 @@ public class DependencyInfo implements Serializable {
     private Collection<ExclusionInfo> exclusions;
     private Collection<String> licenses;
     private Collection<CopyrightInfo> copyrights;
-    private Date lastModified;
     private String filename;
     private DependencyType dependencyType;
     private DependencyHintsInfo hints;
@@ -310,14 +309,6 @@ public class DependencyInfo implements Serializable {
 
     public void setCopyrights(Collection<CopyrightInfo> copyrights) {
         this.copyrights = copyrights;
-    }
-
-    public Date getLastModified() {
-        return lastModified;
-    }
-
-    public void setLastModified(Date lastModified) {
-        this.lastModified = lastModified;
     }
 
     public String getHeaderSha1() {

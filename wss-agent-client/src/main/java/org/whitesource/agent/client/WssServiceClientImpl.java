@@ -16,7 +16,8 @@
 package org.whitesource.agent.client;
 
 import com.btr.proxy.search.ProxySearch;
-import com.google.gson.Gson;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.HttpHost;
@@ -70,7 +71,7 @@ public class WssServiceClientImpl implements WssServiceClient {
 	
 	protected DefaultHttpClient httpClient;
 
-    protected Gson gson;
+    protected ObjectMapper objectMapper;
 
 	protected int connectionTimeout;
 
@@ -110,7 +111,7 @@ public class WssServiceClientImpl implements WssServiceClient {
 	 * @param connectionTimeoutMinutes WhiteSource connection timeout, whether the connection timeout is defined or not (default to 60 minutes).
 	 */
 	public WssServiceClientImpl(String serviceUrl, boolean setProxy, int connectionTimeoutMinutes) {
-		gson = new Gson();
+		objectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
 
 		if (serviceUrl == null || serviceUrl.length() == 0) {
 			this.serviceUrl = ClientConstants.DEFAULT_SERVICE_URL;
@@ -222,16 +223,16 @@ public class WssServiceClientImpl implements WssServiceClient {
 
             switch (request.type()) {
             case UPDATE:
-                result = (R) gson.fromJson(data, UpdateInventoryResult.class);
+                result = (R) objectMapper.readValue(data, UpdateInventoryResult.class);
                 break;
             case CHECK_POLICIES:
-                result = (R) gson.fromJson(data, CheckPoliciesResult.class);
+                result = (R) objectMapper.readValue(data, CheckPoliciesResult.class);
                 break;
 			case CHECK_POLICY_COMPLIANCE:
-				result = (R) gson.fromJson(data, CheckPolicyComplianceResult.class);
+				result = (R) objectMapper.readValue(data, CheckPolicyComplianceResult.class);
 				break;
 			case GET_DEPENDENCY_DATA:
-				result = (R) gson.fromJson(data, GetDependencyDataResult.class);
+				result = (R) objectMapper.readValue(data, GetDependencyDataResult.class);
 				break;
             default:
                 throw new IllegalStateException("Unsupported request type.");
@@ -272,18 +273,18 @@ public class WssServiceClientImpl implements WssServiceClient {
 		String jsonDiff = null;
 		switch (type) {
 			case UPDATE:
-				jsonDiff = gson.toJson(((UpdateInventoryRequest) request).getProjects());
+				jsonDiff = objectMapper.writeValueAsString(((UpdateInventoryRequest) request).getProjects());
 				break;
 			case CHECK_POLICIES:
-				jsonDiff = gson.toJson(((CheckPoliciesRequest) request).getProjects());
+				jsonDiff = objectMapper.writeValueAsString(((CheckPoliciesRequest) request).getProjects());
 				break;
 			case CHECK_POLICY_COMPLIANCE:
 				nvps.add(new BasicNameValuePair(APIConstants.PARAM_FORCE_CHECK_ALL_DEPENDENCIES,
 						String.valueOf(((CheckPolicyComplianceRequest)request).isForceCheckAllDependencies())));
-				jsonDiff = gson.toJson(((CheckPolicyComplianceRequest) request).getProjects());
+				jsonDiff = objectMapper.writeValueAsString(((CheckPolicyComplianceRequest) request).getProjects());
 				break;
 			case GET_DEPENDENCY_DATA:
-				jsonDiff = gson.toJson(((GetDependencyDataRequest) request).getProjects());
+				jsonDiff = objectMapper.writeValueAsString(((GetDependencyDataRequest) request).getProjects());
 				break;
             default: break;
 		}
@@ -309,7 +310,7 @@ public class WssServiceClientImpl implements WssServiceClient {
 	 */
     protected String extractResultData(String response) throws IOException, WssServiceException {
         // parse response
-		ResultEnvelope envelope = gson.fromJson(response, ResultEnvelope.class);
+		ResultEnvelope envelope = objectMapper.readValue(response, ResultEnvelope.class);
         if (envelope == null) {
             throw new WssServiceException("Empty response");
         }

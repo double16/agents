@@ -15,8 +15,7 @@
  */
 package org.whitesource.agent.client;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.*;
@@ -32,7 +31,6 @@ import org.whitesource.agent.api.dispatch.*;
 import org.whitesource.agent.api.model.*;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -106,10 +104,8 @@ public class WssServiceClientTest {
                     } else if (nvp.getName().equals(APIConstants.PARAM_TIME_STAMP)) {
                         assertEquals(nvp.getValue(), Long.toString(updateInventoryRequest.timeStamp()));
                     } else if (nvp.getName().equals(APIConstants.PARAM_DIFF)) {
-                        Gson gson = new Gson();
-                        Type type = new TypeToken<Collection<AgentProjectInfo>>() {
-                        }.getType();
-                        final Collection<AgentProjectInfo> tmpProjects = gson.fromJson(nvp.getValue(), type);
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        final Collection<AgentProjectInfo> tmpProjects = objectMapper.readValue(nvp.getValue(), AgentProjectInfoCollection.class);
                         assertEquals(tmpProjects.size(), 1);
                         final AgentProjectInfo info = tmpProjects.iterator().next();
                         assertEquals(info.getProjectToken(), projectInfo.getProjectToken());
@@ -156,10 +152,8 @@ public class WssServiceClientTest {
                     } else if (nvp.getName().equals(APIConstants.PARAM_TOKEN)) {
                         assertEquals(nvp.getValue(), checkPoliciesRequest.orgToken());
                     } else if (nvp.getName().equals(APIConstants.PARAM_DIFF)) {
-                        Gson gson = new Gson();
-                        Type type = new TypeToken<Collection<AgentProjectInfo>>() {
-                        }.getType();
-                        final Collection<AgentProjectInfo> tmpProjects = gson.fromJson(nvp.getValue(), type);
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        final Collection<AgentProjectInfo> tmpProjects = objectMapper.readValue(nvp.getValue(), AgentProjectInfoCollection.class);
                         assertEquals(tmpProjects.size(), 1);
                         final AgentProjectInfo info = tmpProjects.iterator().next();
                         assertEquals(info.getProjectToken(), projectInfo.getProjectToken());
@@ -360,16 +354,20 @@ public class WssServiceClientTest {
             @Override
             public void handle(HttpRequest request, HttpResponse response,
                                HttpContext context) throws HttpException, IOException {
-                Gson gson = new Gson();
-                String data = gson.toJson(result);
+                ObjectMapper objectMapper = new ObjectMapper();
+                String data = objectMapper.writeValueAsString(result);
                 ResultEnvelope envelope = new ResultEnvelope(status, message, data);
-                String json = gson.toJson(envelope);
+                String json = objectMapper.writeValueAsString(envelope);
                 HttpEntity entity = new StringEntity(json, "utf8");
                 response.setEntity(entity);
 
                 response.setStatusCode(HttpStatus.SC_OK);
             }
         };
+    }
+
+    class AgentProjectInfoCollection extends LinkedList<AgentProjectInfo> {
+
     }
 
 }

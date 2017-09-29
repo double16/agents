@@ -18,7 +18,6 @@ package org.whitesource.agent.api.model;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Class to hold all information about a project to update. 
@@ -89,7 +88,7 @@ public class AgentProjectInfo implements Serializable {
 		return dependencies;
 	}
 
-	public void setDependencies(List<DependencyInfo> dependencies) {
+	public void setDependencies(Collection<DependencyInfo> dependencies) {
 		this.dependencies = dependencies;
 	}
 

@@ -15,8 +15,10 @@
  */
 package org.whitesource.agent.report;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
@@ -27,10 +29,10 @@ import org.whitesource.agent.api.dispatch.BaseCheckPoliciesResult;
 import org.whitesource.agent.api.model.PolicyCheckResourceNode;
 import org.whitesource.agent.api.model.RequestPolicyInfo;
 import org.whitesource.agent.api.model.ResourceInfo;
-import org.whitesource.agent.report.summary.PolicyRejectionReport;
-import org.whitesource.agent.report.summary.RejectingPolicy;
-import org.whitesource.agent.report.summary.RejectedLibrary;
 import org.whitesource.agent.report.model.LicenseHistogramDataPoint;
+import org.whitesource.agent.report.summary.PolicyRejectionReport;
+import org.whitesource.agent.report.summary.RejectedLibrary;
+import org.whitesource.agent.report.summary.RejectingPolicy;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
@@ -161,8 +163,10 @@ public class PolicyCheckReport {
             throw new IOException("Unable to make output directory: " + workDir);
         }
 
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        writeToFile(new File(workDir, CHECK_POLICIES_JSON_FILE), gson.toJson(result));
+        ObjectWriter writer = new ObjectMapper()
+                .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+                .writer(new DefaultPrettyPrinter());
+        writeToFile(new File(workDir, CHECK_POLICIES_JSON_FILE), writer.writeValueAsString(result));
 
         // summarized policy rejection report
         Map<RequestPolicyInfo, RejectingPolicy> policyToSummaryMap = new HashMap<RequestPolicyInfo, RejectingPolicy>();
@@ -179,7 +183,7 @@ public class PolicyCheckReport {
             report.getSummary().setTotalRejectedLibraries(
                     report.getSummary().getTotalRejectedLibraries() + rejectingPolicy.getRejectedLibraries().size());
         }
-        writeToFile(new File(workDir, POLICY_REJECTION_SUMMARY_FILE), gson.toJson(report));
+        writeToFile(new File(workDir, POLICY_REJECTION_SUMMARY_FILE), writer.writeValueAsString(report));
 
         return workDir;
     }

@@ -15,15 +15,15 @@
  */
 package org.whitesource.agent.client;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import org.junit.Test;
 import org.whitesource.agent.api.dispatch.*;
 import org.whitesource.agent.api.model.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
+import java.io.IOException;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -38,12 +38,12 @@ public class ModelSerializationTest {
 
     private RequestFactory requestFactory = new RequestFactory("agent", "agentVersion", "pluginVersion");
 
-    private Gson gson = new Gson();
+    private ObjectMapper objectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
 
     /* --- Test methods --- */
 
     @Test
-    public void testUpdateInventoryRequest() {
+    public void testUpdateInventoryRequest() throws IOException {
         Collection<AgentProjectInfo> projectInfos = createTestProjects();
         UpdateInventoryRequest request = requestFactory.newUpdateInventoryRequest("orgToken", projectInfos);
         UpdateInventoryRequest deserializedRequest = testRequest(request, UpdateInventoryRequest.class);
@@ -51,7 +51,7 @@ public class ModelSerializationTest {
     }
 
     @Test
-    public void testCheckPoliciesRequest() {
+    public void testCheckPoliciesRequest() throws IOException {
         Collection<AgentProjectInfo> projectInfos = createTestProjects();
         CheckPoliciesRequest request = requestFactory.newCheckPoliciesRequest("orgToken", projectInfos);
         CheckPoliciesRequest deserializedRequest = testRequest(request, CheckPoliciesRequest.class);
@@ -59,7 +59,7 @@ public class ModelSerializationTest {
     }
 
     @Test
-    public void testCheckPolicyComplianceRequest() {
+    public void testCheckPolicyComplianceRequest() throws IOException {
         Collection<AgentProjectInfo> projectInfos = createTestProjects();
         CheckPolicyComplianceRequest request = requestFactory.newCheckPolicyComplianceRequest("orgToken", projectInfos, true);
         CheckPolicyComplianceRequest deserializedRequest = testRequest(request, CheckPolicyComplianceRequest.class);
@@ -67,7 +67,7 @@ public class ModelSerializationTest {
     }
 
     @Test
-    public void testUpdateInventoryResult() {
+    public void testUpdateInventoryResult() throws IOException {
         UpdateInventoryResult result = new UpdateInventoryResult();
         result.setOrganization("organization");
         result.setCreatedProjects(Arrays.asList("created-project-1", "created-project-2", "created-project-3"));
@@ -80,7 +80,7 @@ public class ModelSerializationTest {
     }
 
     @Test
-    public void testCheckPoliciesResult() {
+    public void testCheckPoliciesResult() throws IOException {
         CheckPoliciesResult result = createCheckPoliciesResult();
         CheckPoliciesResult deserializedResult = testResult(result, CheckPoliciesResult.class);
         assertCheckPoliciesResultEquals(deserializedResult, result);
@@ -88,10 +88,14 @@ public class ModelSerializationTest {
 
     /* --- Private methods --- */
 
-    private <R, T extends BaseRequest<R>> T testRequest(T request, Class<T> clazz) {
-        String serializedRequest = gson.toJson(request);
-        T deserializedRequest = gson.fromJson(serializedRequest, clazz);
+    private <R, T extends BaseRequest<R>> T testRequest(T request, Class<T> clazz) throws IOException {
+        String serializedRequest = objectMapper.writeValueAsString(request);
+        T deserializedRequest = objectMapper.readValue(serializedRequest, clazz);
         assertRequestEquals(deserializedRequest, request);
+
+        // test deserialization with Gson
+        T gsonDeserializedRequest = new Gson().fromJson(serializedRequest, clazz);
+        assertRequestEquals(gsonDeserializedRequest, request);
 
         return deserializedRequest;
     }
@@ -104,16 +108,16 @@ public class ModelSerializationTest {
         assertEquals(expected.timeStamp(), request.timeStamp());
     }
 
-    private <T> T testResult(T result, Class<T> clazz) {
-        String serializedResult = gson.toJson(result);
+    private <T> T testResult(T result, Class<T> clazz) throws IOException {
+        String serializedResult = objectMapper.writeValueAsString(result);
         ResultEnvelope envelope = new ResultEnvelope(ResultEnvelope.STATUS_SUCCESS, ResultEnvelope.MESSAGE_OK, serializedResult);
-        String serializedEnvelop = gson.toJson(envelope);
-        ResultEnvelope deserializedEnvelop = gson.fromJson(serializedEnvelop, ResultEnvelope.class);
+        String serializedEnvelop = objectMapper.writeValueAsString(envelope);
+        ResultEnvelope deserializedEnvelop = objectMapper.readValue(serializedEnvelop, ResultEnvelope.class);
         assertEquals(envelope.getStatus(), deserializedEnvelop.getStatus());
         assertEquals(envelope.getMessage(), deserializedEnvelop.getMessage());
         assertEquals(envelope.getData(), deserializedEnvelop.getData());
 
-        return gson.fromJson(envelope.getData(), clazz);
+        return objectMapper.readValue(envelope.getData(), clazz);
     }
 
     private Collection<AgentProjectInfo> createTestProjects() {
@@ -131,10 +135,12 @@ public class ModelSerializationTest {
             dependencyInfo.setType("type-" + i);
             dependencyInfo.setScope("scope-" + i);
             dependencyInfo.setSha1("sha1-" + i);
+            dependencyInfo.getChecksums().put(ChecksumType.SHA1, "sha1-" + i);
             dependencyInfo.setSystemPath("systemPath-" + i);
             dependencyInfo.setOptional(true);
             dependencyInfo.getExclusions().add(new ExclusionInfo("exclusion-groupId-" + i, "exclusion-artifactId-" + i));
             dependencyInfo.getExclusions().add(new ExclusionInfo("exclusion-groupId-" + i, "exclusion-artifactId-" + i));
+            dependencyInfo.setDependencyType(DependencyType.MAVEN);
 
             projectInfo.getDependencies().add(dependencyInfo);
         }

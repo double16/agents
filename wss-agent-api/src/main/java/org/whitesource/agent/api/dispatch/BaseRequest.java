@@ -15,6 +15,7 @@
  */
 package org.whitesource.agent.api.dispatch;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.whitesource.agent.api.model.AgentProjectInfo;
 
 import java.util.ArrayList;
@@ -90,52 +91,61 @@ public abstract class BaseRequest<R> implements ServiceRequest<R> {
 		this.agentVersion = agentVersion;
 		this.pluginVersion = pluginVersion;
         this.timeStamp = System.currentTimeMillis();
-		projects = new ArrayList<AgentProjectInfo>();
+		projects = new ArrayList<>();
 	}
 
 	/* --- Interface implementation methods --- */
 
     @Override
+	@JsonProperty
 	public RequestType type() {
 		return type;
 	}
 
     @Override
+	@JsonProperty
 	public String orgToken() {
 		return orgToken;
 	}
 
     @Override
+	@JsonProperty
 	public String agent() {
 		return agent;
 	}
 
     @Override
+	@JsonProperty
 	public String agentVersion() {
 		return agentVersion;
 	}
 
 	@Override
+	@JsonProperty
 	public String pluginVersion() {
 		return pluginVersion;
 	}
 
 	@Override
+	@JsonProperty
     public String product() {
         return product;
     }
 
     @Override
+	@JsonProperty
     public String productVersion() {
         return productVersion;
     }
 
     @Override
+	@JsonProperty
     public long timeStamp() {
         return timeStamp;
     }
 
     @Override
+	@JsonProperty
     public String requesterEmail() {
         return requesterEmail;
     }

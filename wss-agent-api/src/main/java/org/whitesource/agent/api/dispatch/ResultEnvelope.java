@@ -96,6 +96,10 @@ public class ResultEnvelope implements Serializable {
 		return envelopeVersion;
 	}
 
+	public void setEnvelopeVersion(String envelopeVersion) {
+		this.envelopeVersion = envelopeVersion;
+	}
+
 	public int getStatus() {
 		return status;
 	}

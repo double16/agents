@@ -15,8 +15,9 @@
  */
 package org.whitesource.agent.report;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
 import org.whitesource.agent.api.dispatch.UpdateInventoryRequest;
 import org.whitesource.agent.hash.ZipUtils;
@@ -74,14 +75,21 @@ public class OfflineUpdateRequest {
         }
 
         String json;
+        ObjectMapper mapper = new ObjectMapper();
         if (zip) {
-            json = new Gson().toJson(request);
+            json = mapper
+                    .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+                    .writeValueAsString(request);
             json = ZipUtils.compress(json);
         } else if (prettyJson) {
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            json = gson.toJson(request);
+            json = mapper
+                    .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+                    .writer(new DefaultPrettyPrinter())
+                    .writeValueAsString(request);
         } else {
-            json = new Gson().toJson(request);
+            json = mapper
+                    .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+                    .writeValueAsString(request);
         }
 
         // write to file
